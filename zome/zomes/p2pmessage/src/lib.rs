@@ -6,22 +6,28 @@ use entries::message::{self};
 
 use message::*;
 
+use message::get_adjacent_messages::get_adjacent_messages_handler;
 use message::get_file_bytes::get_file_bytes_handler;
 use message::get_latest_messages::get_latest_messages_handler;
 use message::get_messages_by_agent_by_timestamp::get_messages_by_agent_by_timestamp_handler;
 use message::get_next_batch_messages::get_next_batch_messages_handler;
+use message::get_next_messages::get_next_messages_handler;
+use message::get_pinned_messages::get_pinned_messages_handler;
 use message::init::init_handler;
+use message::pin_message::pin_message_handler;
 use message::read_message::read_message_handler;
 use message::receive_message::receive_message_handler;
 use message::receive_read_receipt::receive_read_receipt_handler;
 use message::send_message::send_message_handler;
 use message::send_message_with_timestamp::send_message_with_timestamp_handler;
+use message::sync_pins::sync_pins_handler;
 use message::typing::typing_handler;
 
 entry_defs![
     P2PMessage::entry_def(),
     P2PMessageReceipt::entry_def(),
-    P2PFileBytes::entry_def()
+    P2PFileBytes::entry_def(),
+    P2PMessagePin::entry_def()
 ];
 
 pub fn error<T>(reason: &str) -> ExternResult<T> {
@@ -102,4 +108,29 @@ fn receive_read_receipt(receipt: P2PMessageReceipt) -> ExternResult<ReceiptConte
 #[hdk_extern]
 fn get_file_bytes(file_hashes: Vec<EntryHash>) -> ExternResult<FileContents> {
     return get_file_bytes_handler(file_hashes);
+}
+
+#[hdk_extern]
+fn pin_message(pin_message_input: PinMessageInput) -> ExternResult<PinContents> {
+    return pin_message_handler(pin_message_input);
+}
+
+#[hdk_extern]
+fn sync_pins(pin: P2PMessagePin) -> ExternResult<PinContents> {
+    return sync_pins_handler(pin);
+}
+
+#[hdk_extern]
+fn get_pinned_messages(conversant: AgentPubKey) -> ExternResult<P2PMessageHashTables> {
+    return get_pinned_messages_handler(conversant);
+}
+
+#[hdk_extern]
+fn get_next_messages(filter: P2PMessageFilterBatch) -> ExternResult<P2PMessageHashTables> {
+    return get_next_messages_handler(filter);
+}
+
+#[hdk_extern]
+fn get_adjacent_messages(filter: P2PMessageFilterBatch) -> ExternResult<P2PMessageHashTables> {
+    return get_adjacent_messages_handler(filter);
 }

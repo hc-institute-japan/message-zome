@@ -5,17 +5,22 @@ use std::collections::HashMap;
 //pub mod handlers; MANUEL:this file contains a method never used maybe we want to erase the file
 
 //this are the files for each method definition
+pub mod get_adjacent_messages;
 pub mod get_file_bytes;
 pub mod get_latest_messages;
 pub mod get_messages_by_agent_by_timestamp;
 pub mod get_next_batch_messages;
+pub mod get_next_messages;
+pub mod get_pinned_messages;
 pub mod helpers;
 pub mod init;
+pub mod pin_message;
 pub mod read_message;
 pub mod receive_message;
 pub mod receive_read_receipt;
 pub mod send_message;
 pub mod send_message_with_timestamp;
+pub mod sync_pins;
 pub mod typing;
 
 use file_types::{FileType, Payload, PayloadInput};
@@ -35,6 +40,13 @@ pub struct P2PMessage {
 pub struct P2PMessageReceipt {
     id: Vec<EntryHash>,
     status: Status,
+}
+
+#[derive(Serialize, Deserialize, SerializedBytes, Clone, Debug)]
+pub struct P2PMessagePin {
+    id: Vec<EntryHash>,
+    conversants: Vec<AgentPubKey>,
+    status: PinStatus,
 }
 
 #[derive(Serialize, Deserialize, SerializedBytes, Clone, Debug)]
@@ -63,6 +75,14 @@ entry_def!(P2PFileBytes
 
 entry_def!(P2PMessageReceipt EntryDef {
     id: "p2pmessagereceipt".into(),
+    visibility: EntryVisibility::Private,
+    crdt_type: CrdtType,
+    required_validations: RequiredValidations::default(),
+    required_validation_type: RequiredValidationType::Element
+});
+
+entry_def!(P2PMessagePin EntryDef {
+    id: "p2pmessagepin".into(),
     visibility: EntryVisibility::Private,
     crdt_type: CrdtType,
     required_validations: RequiredValidations::default(),
@@ -108,6 +128,14 @@ pub struct ReadMessageInput {
 }
 
 #[derive(Serialize, Deserialize, SerializedBytes, Clone, Debug)]
+pub struct PinMessageInput {
+    message_hashes: Vec<EntryHash>,
+    conversants: Vec<AgentPubKey>,
+    status: String,
+    timestamp: Timestamp,
+}
+
+#[derive(Serialize, Deserialize, SerializedBytes, Clone, Debug)]
 pub struct ReceiveMessageInput(P2PMessage, Option<P2PFileBytes>);
 
 #[derive(Serialize, Deserialize, SerializedBytes, Clone, Debug)]
@@ -116,6 +144,13 @@ pub enum Status {
     Sent,
     Delivered { timestamp: Timestamp },
     Read { timestamp: Timestamp },
+}
+
+#[derive(Serialize, Deserialize, SerializedBytes, Clone, Debug)]
+#[serde(tag = "pinstatus", rename_all = "camelCase")]
+pub enum PinStatus {
+    Pinned { timestamp: Timestamp },
+    Unpinned { timestamp: Timestamp },
 }
 
 // GET FILTERS
@@ -192,6 +227,9 @@ pub struct ReceiptContents(HashMap<String, P2PMessageReceipt>);
 #[derive(Serialize, Deserialize, SerializedBytes, Clone, Debug)]
 pub struct FileContents(HashMap<String, P2PFileBytes>);
 
+#[derive(Serialize, Deserialize, SerializedBytes, Clone, Debug)]
+pub struct PinContents(HashMap<String, P2PMessagePin>);
+
 #[derive(From, Into, Serialize, Deserialize, Clone, SerializedBytes, Debug)]
 pub struct P2PMessageHashTables(AgentMessages, MessageContents, ReceiptContents);
 
@@ -202,6 +240,7 @@ pub enum Signal {
     Message(MessageSignal),
     P2PTypingDetailSignal(TypingSignal),
     P2PMessageReceipt(ReceiptSignal),
+    P2PPinSignal(PinSignal),
 }
 
 #[derive(Serialize, Deserialize, SerializedBytes, Clone, Debug)]
@@ -217,6 +256,10 @@ pub struct MessageSignal {
 #[derive(Serialize, Deserialize, SerializedBytes, Clone, Debug)]
 pub struct ReceiptSignal {
     receipt: ReceiptContents,
+}
+#[derive(Serialize, Deserialize, SerializedBytes, Clone, Debug)]
+pub struct PinSignal {
+    pin: PinContents,
 }
 
 #[derive(Serialize, Deserialize, SerializedBytes, Clone, Debug)]

@@ -19,6 +19,9 @@ pub fn init_handler() -> ExternResult<InitCallbackResult> {
     let mut recv_remote_signal_function: GrantedFunctions = HashSet::new();
     recv_remote_signal_function.insert((zome_name.clone(), "recv_remote_signal".into()));
 
+    let mut sync_pins_function: GrantedFunctions = HashSet::new();
+    sync_pins_function.insert((zome_name.clone(), "sync_pins".into()));
+
     create_cap_grant(CapGrantEntry {
         tag: "receive_message".into(),
         access: CapAccess::Unrestricted,
@@ -41,6 +44,12 @@ pub fn init_handler() -> ExternResult<InitCallbackResult> {
         tag: "recv_remote_signal".into(),
         access: CapAccess::Unrestricted,
         functions: recv_remote_signal_function,
+    })?;
+
+    create_cap_grant(CapGrantEntry {
+        tag: "sync_pins".into(),
+        access: CapAccess::Unrestricted,
+        functions: sync_pins_function,
     })?;
 
     Ok(InitCallbackResult::Pass)
