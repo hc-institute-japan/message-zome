@@ -18,7 +18,10 @@ use message::pin_message::pin_message_handler;
 use message::read_message::read_message_handler;
 use message::receive_message::receive_message_handler;
 use message::receive_read_receipt::receive_read_receipt_handler;
+use message::receive_receipt::receive_receipt_handler;
+use message::save_message::save_message_handler;
 use message::send_message::send_message_handler;
+use message::send_message_2::send_message_2_handler;
 use message::send_message_with_timestamp::send_message_with_timestamp_handler;
 use message::sync_pins::sync_pins_handler;
 use message::typing::typing_handler;
@@ -133,4 +136,19 @@ fn get_next_messages(filter: P2PMessageFilterBatch) -> ExternResult<P2PMessageHa
 #[hdk_extern]
 fn get_adjacent_messages(filter: P2PMessageFilterBatch) -> ExternResult<P2PMessageHashTables> {
     return get_adjacent_messages_handler(filter);
+}
+
+#[hdk_extern]
+fn save_message(message_input: MessageInput) -> ExternResult<MessageDataAndReceipt> {
+    return save_message_handler(message_input);
+}
+
+#[hdk_extern]
+fn send_message_2(message_input: MessageInputWithTimestamp) -> ExternResult<MessageReceipt> {
+    return send_message_2_handler(message_input);
+}
+
+#[hdk_extern]
+fn receive_receipt(message_input: P2PMessageReceipt) -> ExternResult<ReceiptContents> {
+    return receive_receipt_handler(message_input);
 }

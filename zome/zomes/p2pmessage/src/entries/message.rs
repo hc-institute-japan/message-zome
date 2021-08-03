@@ -18,7 +18,10 @@ pub mod pin_message;
 pub mod read_message;
 pub mod receive_message;
 pub mod receive_read_receipt;
+pub mod receive_receipt;
+pub mod save_message;
 pub mod send_message;
+pub mod send_message_2;
 pub mod send_message_with_timestamp;
 pub mod sync_pins;
 pub mod typing;
@@ -111,7 +114,6 @@ pub struct MessageInput {
     reply_to: Option<EntryHash>,
 }
 
-// test_stub: test structure for accepting timestamp as input in send_message
 #[derive(Serialize, Deserialize, SerializedBytes, Clone, Debug)]
 pub struct MessageInputWithTimestamp {
     receiver: AgentPubKey,
@@ -192,6 +194,9 @@ pub struct MessageAndReceipt((EntryHash, P2PMessage), (EntryHash, P2PMessageRece
 
 #[derive(From, Into, Serialize, Deserialize, Clone, SerializedBytes, Debug)]
 pub struct MessageDataAndReceipt((EntryHash, P2PMessageData), (EntryHash, P2PMessageReceipt));
+
+#[derive(From, Into, Serialize, Deserialize, Clone, SerializedBytes, Debug)]
+pub struct MessageReceipt(EntryHash, P2PMessageReceipt);
 
 // OUTPUT STRUCTURES
 #[derive(From, Into, Serialize, Deserialize, Clone, SerializedBytes, Debug)]
