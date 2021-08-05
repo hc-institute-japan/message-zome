@@ -7,22 +7,19 @@ use hdk::prelude::*;
 pub fn init_handler() -> ExternResult<InitCallbackResult> {
     let zome_name: ZomeName = zome_info()?.zome_name;
 
-    let mut receive_message_function: GrantedFunctions = HashSet::new();
+    let mut receive_message_function: GrantedFunctions = BTreeSet::new();
     receive_message_function.insert((zome_name.clone(), "receive_message".into()));
 
-    let mut receive_read_receipt_function = HashSet::new();
-    receive_read_receipt_function.insert((zome_name.clone(), "receive_read_receipt".into()));
+    let mut receive_receipt_function = BTreeSet::new();
+    receive_receipt_function.insert((zome_name.clone(), "receive_read_receipt".into()));
 
     let mut receive_delivered_receipt_function = HashSet::new();
     receive_delivered_receipt_function.insert((zome_name.clone(), "receive_receipt".into()));
 
-    let mut recv_remote_signal_function: GrantedFunctions = HashSet::new();
+    let mut recv_remote_signal_function: GrantedFunctions = BTreeSet::new();
     recv_remote_signal_function.insert((zome_name.clone(), "recv_remote_signal".into()));
 
-    let mut recv_remote_signal_function: GrantedFunctions = HashSet::new();
-    recv_remote_signal_function.insert((zome_name.clone(), "recv_remote_signal".into()));
-
-    let mut sync_pins_function: GrantedFunctions = HashSet::new();
+    let mut sync_pins_function: GrantedFunctions = BTreeSet::new();
     sync_pins_function.insert((zome_name.clone(), "sync_pins".into()));
 
     create_cap_grant(CapGrantEntry {
