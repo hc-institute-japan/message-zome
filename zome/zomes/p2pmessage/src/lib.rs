@@ -20,7 +20,7 @@ use message::receive_message::receive_message_handler;
 use message::receive_read_receipt::receive_read_receipt_handler;
 use message::receive_receipt::receive_receipt_handler;
 use message::save_message::save_message_handler;
-use message::send_message::send_message_handler;
+// use message::send_message::send_message_handler;
 use message::send_message_2::send_message_2_handler;
 use message::send_message_with_timestamp::send_message_with_timestamp_handler;
 use message::sync_pins::sync_pins_handler;
@@ -56,11 +56,11 @@ fn init(_: ()) -> ExternResult<InitCallbackResult> {
     return init_handler();
 }
 
-#[hdk_extern]
-fn send_message(message_input: MessageInput) -> ExternResult<MessageDataAndReceipt> {
-    //MessageAndReceipt
-    return send_message_handler(message_input);
-}
+// #[hdk_extern]
+// fn send_message(message_input: MessageInput) -> ExternResult<MessageDataAndReceipt> {
+//     //MessageAndReceipt
+//     return send_message_handler(message_input);
+// }
 
 // test_stub: used for testing get by timestamp
 #[hdk_extern]

@@ -9,9 +9,9 @@ use super::{
 };
 use crate::utils::error;
 
-pub fn send_message_handler(message_input: MessageInput) -> ExternResult<MessageDataAndReceipt> {
+pub fn _send_message_handler(message_input: MessageInput) -> ExternResult<MessageDataAndReceipt> {
     // TODO: check if receiver is blocked
-
+    debug!("send message gets called");
     let now = sys_time()?;
 
     let message = P2PMessage {

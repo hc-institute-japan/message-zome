@@ -12,6 +12,8 @@ pub fn send_message_2_handler(
     message_input: MessageInputWithTimestamp,
 ) -> ExternResult<MessageReceipt> {
     let message = P2PMessage {
+        // consider querying from source chain instead of accepting input
+        // to avoid making UI as a source of data integrity
         author: agent_info()?.agent_latest_pubkey,
         receiver: message_input.receiver,
         payload: match message_input.payload {
@@ -24,7 +26,7 @@ pub fn send_message_2_handler(
                 ref file_bytes,
             } => {
                 let p2pfile = P2PFileBytes(file_bytes.clone());
-                create_entry(&p2pfile)?;
+                create_entry(&p2pfile)?; // TODO: remove this
                 let file_hash = hash_entry(&p2pfile)?;
                 Payload::File {
                     metadata: FileMetadata {
