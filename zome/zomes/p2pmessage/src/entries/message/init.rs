@@ -10,10 +10,10 @@ pub fn init_handler() -> ExternResult<InitCallbackResult> {
     let mut receive_message_function: GrantedFunctions = BTreeSet::new();
     receive_message_function.insert((zome_name.clone(), "receive_message".into()));
 
-    let mut receive_receipt_function = BTreeSet::new();
-    receive_receipt_function.insert((zome_name.clone(), "receive_read_receipt".into()));
+    let mut receive_read_receipt_function = BTreeSet::new();
+    receive_read_receipt_function.insert((zome_name.clone(), "receive_read_receipt".into()));
 
-    let mut receive_delivered_receipt_function = HashSet::new();
+    let mut receive_delivered_receipt_function = BTreeSet::new();
     receive_delivered_receipt_function.insert((zome_name.clone(), "receive_receipt".into()));
 
     let mut recv_remote_signal_function: GrantedFunctions = BTreeSet::new();
