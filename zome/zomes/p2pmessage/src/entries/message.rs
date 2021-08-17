@@ -15,10 +15,13 @@ pub mod get_pinned_messages;
 pub mod helpers;
 pub mod init;
 pub mod pin_message;
-pub mod read_message;
+pub mod read_message_call_remote;
+pub mod read_message_remote_signal;
 pub mod receive_message;
 pub mod receive_read_receipt;
-pub mod send_message;
+pub mod receive_receipt;
+pub mod send_message_call_remote;
+pub mod send_message_remote_signal;
 pub mod send_message_with_timestamp;
 pub mod sync_pins;
 pub mod typing;
@@ -135,7 +138,7 @@ pub struct PinMessageInput {
     timestamp: Timestamp,
 }
 
-#[derive(Serialize, Deserialize, SerializedBytes, Clone, Debug)]
+#[derive(From, Into, Serialize, Deserialize, Clone, SerializedBytes, Debug)]
 pub struct ReceiveMessageInput(P2PMessage, Option<P2PFileBytes>);
 
 #[derive(Serialize, Deserialize, SerializedBytes, Clone, Debug)]
@@ -241,6 +244,8 @@ pub enum Signal {
     P2PTypingDetailSignal(TypingSignal),
     P2PMessageReceipt(ReceiptSignal),
     P2PPinSignal(PinSignal),
+    P2PReceiveMessage(RemoteMessageSignal),
+    P2PReceiveReceipt(RemoteReceiptSignal),
 }
 
 #[derive(Serialize, Deserialize, SerializedBytes, Clone, Debug)]
@@ -261,7 +266,14 @@ pub struct ReceiptSignal {
 pub struct PinSignal {
     pin: PinContents,
 }
-
+#[derive(Serialize, Deserialize, SerializedBytes, Clone, Debug)]
+pub struct RemoteMessageSignal {
+    pub input: ReceiveMessageInput,
+}
+#[derive(Serialize, Deserialize, SerializedBytes, Clone, Debug)]
+pub struct RemoteReceiptSignal {
+    pub receipt: P2PMessageReceipt,
+}
 #[derive(Serialize, Deserialize, SerializedBytes, Clone, Debug)]
 pub struct TypingSignal {
     agent: AgentPubKey,

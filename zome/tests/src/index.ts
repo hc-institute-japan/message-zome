@@ -33,9 +33,9 @@ const installables: Installables = {
   one: installAgent,
 };
 
-messaging(conductorConfig, installables);
+// messaging(conductorConfig, installables);
 // receipts(conductorConfig, installables);
 // signals(conductorConfig, installables);
 // pin(conductorConfig, installables);
 // jumps(conductorConfig, installables);
-// playground(conductorConfig, installables);
+playground(conductorConfig, installables);

@@ -1,10 +1,9 @@
-use hdk::prelude::*;
-
 use super::{
     MessageDataAndReceipt, MessageSignal, P2PMessage, P2PMessageData, P2PMessageReceipt,
-    P2PMessageReplyTo, ReceiveMessageInput, Signal, SignalDetails,
+    P2PMessageReplyTo, ReceiveMessageInput, RemoteReceiptSignal, Signal, SignalDetails,
 };
 use crate::utils::try_from_element;
+use hdk::prelude::*;
 
 pub fn receive_message_handler(input: ReceiveMessageInput) -> ExternResult<P2PMessageReceipt> {
     let receipt = P2PMessageReceipt::from_message(input.0.clone())?;
@@ -60,6 +59,18 @@ pub fn receive_message_handler(input: ReceiveMessageInput) -> ExternResult<P2PMe
         }
     }
 
+    let signal_payload = Signal::P2PReceiveReceipt(RemoteReceiptSignal {
+        receipt: receipt.clone(),
+    });
+
+    let signal = SignalDetails {
+        name: "P2P_REMOTE_DELIVERED_RECEIPT".to_string(),
+        payload: signal_payload,
+    };
+
+    remote_signal(ExternIO::encode(signal)?, vec![input.0.author.clone()])?;
+
+    // emit signal to UI or return?
     let signal = Signal::Message(MessageSignal {
         message: MessageDataAndReceipt(
             (hash_entry(&input.0.clone())?, message_return),

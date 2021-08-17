@@ -9,9 +9,10 @@ use super::{
 };
 use crate::utils::error;
 
-pub fn send_message_handler(message_input: MessageInput) -> ExternResult<MessageDataAndReceipt> {
+pub fn send_message_call_remote_handler(
+    message_input: MessageInput,
+) -> ExternResult<MessageDataAndReceipt> {
     // TODO: check if receiver is blocked
-
     let now = sys_time()?;
 
     let message = P2PMessage {
@@ -66,6 +67,10 @@ pub fn send_message_handler(message_input: MessageInput) -> ExternResult<Message
 
     match receive_call_result {
         ZomeCallResponse::Ok(extern_io) => {
+            match extern_io.clone().decode::<P2PMessageReceipt>() {
+                Ok(res) => debug!("nicko ok {:?} {:?}", res, &message.payload),
+                Err(err) => debug!("nicko error {:?} {:?}", err, &message.payload),
+            };
             let received_receipt: P2PMessageReceipt = extern_io.decode()?;
             // create_entry(&message)?;
             // create_entry(&receipt)?;
@@ -126,15 +131,15 @@ pub fn send_message_handler(message_input: MessageInput) -> ExternResult<Message
                 (hash_entry(&received_receipt)?, received_receipt),
             ))
         }
-        // This case shouldn't happen because of unrestricted access to receive message
-        // keeping it here for exhaustive matching
-        ZomeCallResponse::Unauthorized(_, _, _, _) => {
-            return error("Sorry, something went wrong. [Authorization error]");
-        }
         // Error that might happen when
         ZomeCallResponse::NetworkError(_e) => {
             // return error(&e);
             return error("Sorry, something went wrong. [Network error]");
+        }
+        // This case shouldn't happen because of unrestricted access to receive message
+        // keeping it here for exhaustive matching
+        ZomeCallResponse::Unauthorized(_, _, _, _) => {
+            return error("Sorry, something went wrong. [Authorization error]");
         }
     }
 }

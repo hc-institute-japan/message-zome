@@ -15,10 +15,13 @@ use message::get_next_messages::get_next_messages_handler;
 use message::get_pinned_messages::get_pinned_messages_handler;
 use message::init::init_handler;
 use message::pin_message::pin_message_handler;
-use message::read_message::read_message_handler;
+use message::read_message_call_remote::read_message_call_remote_handler;
+use message::read_message_remote_signal::read_message_remote_signal_handler;
 use message::receive_message::receive_message_handler;
 use message::receive_read_receipt::receive_read_receipt_handler;
-use message::send_message::send_message_handler;
+use message::receive_receipt::receive_receipt_handler;
+use message::send_message_call_remote::send_message_call_remote_handler;
+use message::send_message_remote_signal::send_message_remote_signal_handler;
 use message::send_message_with_timestamp::send_message_with_timestamp_handler;
 use message::sync_pins::sync_pins_handler;
 use message::typing::typing_handler;
@@ -42,35 +45,86 @@ pub fn err<T>(code: &str, message: &str) -> ExternResult<T> {
 }
 
 #[hdk_extern]
-fn recv_remote_signal(signal: ExternIO) -> ExternResult<()> {
-    let signal_detail: SignalDetails = signal.decode()?;
-    emit_signal(&signal_detail)?;
-    Ok(())
-}
-
-#[hdk_extern]
 fn init(_: ()) -> ExternResult<InitCallbackResult> {
     return init_handler();
 }
 
 #[hdk_extern]
-fn send_message(message_input: MessageInput) -> ExternResult<MessageDataAndReceipt> {
-    //MessageAndReceipt
-    return send_message_handler(message_input);
+fn recv_remote_signal(signal: ExternIO) -> ExternResult<()> {
+    debug!("nicko receive remote signal is called");
+    let signal_detail: SignalDetails = signal.decode()?;
+    debug!("nicko decoded signal {:?}", signal_detail.clone());
+
+    if signal_detail.name == "P2P_REMOTE_MESSAGE" {
+        debug!("nicko receive remote message signal");
+        if let Signal::P2PReceiveMessage(RemoteMessageSignal { input }) = signal_detail.payload {
+            receive_message_handler(input)?;
+        }
+        Ok(())
+    } else if signal_detail.name == "P2P_REMOTE_DELIVERED_RECEIPT" {
+        debug!("nicko receive remote delivered receipt signal");
+        if let Signal::P2PReceiveReceipt(RemoteReceiptSignal { receipt }) = signal_detail.payload {
+            receive_read_receipt_handler(receipt)?;
+        }
+        Ok(())
+    } else if signal_detail.name == "P2P_REMOTE_READ_RECEIPT" {
+        debug!("nicko receive remote read receipt signal");
+        if let Signal::P2PReceiveReceipt(RemoteReceiptSignal { receipt }) = signal_detail.payload {
+            receive_receipt_handler(receipt)?;
+        }
+        Ok(())
+    } else if signal_detail.name == "TYPING_P2P" {
+        emit_signal(&signal_detail)?;
+        Ok(())
+    } else {
+        debug!("nicko fallthrough signal case");
+        Ok(())
+    }
 }
 
-// test_stub: used for testing get by timestamp
+// call_remote set
+#[hdk_extern]
+fn send_message_call_remote(message_input: MessageInput) -> ExternResult<MessageDataAndReceipt> {
+    return send_message_call_remote_handler(message_input);
+}
+#[hdk_extern]
+fn read_message_call_remote(read_message_input: ReadMessageInput) -> ExternResult<ReceiptContents> {
+    return read_message_call_remote_handler(read_message_input);
+}
 #[hdk_extern]
 fn send_message_with_timestamp(
     message_input: MessageInputWithTimestamp,
 ) -> ExternResult<MessageDataAndReceipt> {
-    //MessageAndReceipt
     return send_message_with_timestamp_handler(message_input);
+}
+// end of call_remote set
+
+// remote_signal set
+#[hdk_extern]
+fn send_message_remote_signal(message_input: MessageInput) -> ExternResult<MessageDataAndReceipt> {
+    return send_message_remote_signal_handler(message_input);
+}
+#[hdk_extern]
+fn read_message_remote_signal(
+    read_message_input: ReadMessageInput,
+) -> ExternResult<ReceiptContents> {
+    return read_message_remote_signal_handler(read_message_input);
+}
+// end of remote_signal set
+
+#[hdk_extern]
+fn receive_read_receipt(receipt: P2PMessageReceipt) -> ExternResult<ReceiptContents> {
+    return receive_read_receipt_handler(receipt);
 }
 
 #[hdk_extern]
-fn read_message(read_message_input: ReadMessageInput) -> ExternResult<ReceiptContents> {
-    return read_message_handler(read_message_input);
+fn pin_message(pin_message_input: PinMessageInput) -> ExternResult<PinContents> {
+    return pin_message_handler(pin_message_input);
+}
+
+#[hdk_extern]
+fn sync_pins(pin: P2PMessagePin) -> ExternResult<PinContents> {
+    return sync_pins_handler(pin);
 }
 
 #[hdk_extern]
@@ -101,23 +155,8 @@ fn typing(typing_info: P2PTypingDetailIO) -> ExternResult<()> {
 }
 
 #[hdk_extern]
-fn receive_read_receipt(receipt: P2PMessageReceipt) -> ExternResult<ReceiptContents> {
-    return receive_read_receipt_handler(receipt);
-}
-
-#[hdk_extern]
 fn get_file_bytes(file_hashes: Vec<EntryHash>) -> ExternResult<FileContents> {
     return get_file_bytes_handler(file_hashes);
-}
-
-#[hdk_extern]
-fn pin_message(pin_message_input: PinMessageInput) -> ExternResult<PinContents> {
-    return pin_message_handler(pin_message_input);
-}
-
-#[hdk_extern]
-fn sync_pins(pin: P2PMessagePin) -> ExternResult<PinContents> {
-    return sync_pins_handler(pin);
 }
 
 #[hdk_extern]
