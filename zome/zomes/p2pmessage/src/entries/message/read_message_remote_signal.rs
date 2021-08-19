@@ -16,14 +16,10 @@ pub fn read_message_remote_signal_handler(
         },
     };
 
-    debug!("nicko read {:?}", receipt.clone());
-
     let receipt_hash = create_entry(&receipt)?;
 
     let mut receipt_contents: HashMap<String, P2PMessageReceipt> = HashMap::new();
     receipt_contents.insert(receipt_hash.to_string(), receipt.clone());
-
-    debug!("nicko read hashmap {:?}", receipt_contents.clone());
 
     let signal_payload = Signal::P2PReceiveReceipt(RemoteReceiptSignal { receipt: receipt });
 
@@ -36,8 +32,6 @@ pub fn read_message_remote_signal_handler(
         ExternIO::encode(signal)?,
         vec![read_message_input.sender.clone()],
     )?;
-
-    debug!("nicko read remote_signal done");
 
     Ok(ReceiptContents(receipt_contents))
 }

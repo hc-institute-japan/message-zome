@@ -5,14 +5,14 @@ use file_types::{FileMetadata, Payload, PayloadInput};
 
 use super::{
     MessageDataAndReceipt, MessageInput, P2PFileBytes, P2PMessage, P2PMessageData,
-    P2PMessageReceipt, P2PMessageReplyTo, ReceiveMessageInput,
+    P2PMessageReceipt, P2PMessageReplyTo, ReceiveMessageInput, RemoteMessageSignal, Signal,
+    SignalDetails,
 };
 use crate::utils::error;
 
 pub fn send_message_call_remote_handler(
     message_input: MessageInput,
 ) -> ExternResult<MessageDataAndReceipt> {
-    // TODO: check if receiver is blocked
     let now = sys_time()?;
 
     let message = P2PMessage {
@@ -45,7 +45,7 @@ pub fn send_message_call_remote_handler(
         reply_to: message_input.reply_to,
     };
 
-    let sent_receipt = P2PMessageReceipt::from_message(message.clone())?;
+    let sent_receipt = P2PMessageReceipt::from_message(message.clone(), "Sent")?;
     create_entry(&message)?;
     create_entry(&sent_receipt)?;
 
@@ -57,6 +57,17 @@ pub fn send_message_call_remote_handler(
     // create message input to receive function of recipient
     let receive_input = ReceiveMessageInput(message.clone(), file.clone());
 
+    let signal_payload = Signal::P2PReceiveMessage(RemoteMessageSignal {
+        input: receive_input.clone(),
+    });
+
+    let signal = SignalDetails {
+        name: "P2P_REMOTE_MESSAGE".to_string(),
+        payload: signal_payload,
+    };
+
+    remote_signal(ExternIO::encode(signal)?, vec![message.receiver.clone()])?;
+
     let receive_call_result: ZomeCallResponse = call_remote(
         message.receiver.clone(),
         zome_info()?.zome_name,
@@ -67,10 +78,6 @@ pub fn send_message_call_remote_handler(
 
     match receive_call_result {
         ZomeCallResponse::Ok(extern_io) => {
-            match extern_io.clone().decode::<P2PMessageReceipt>() {
-                Ok(res) => debug!("nicko ok {:?} {:?}", res, &message.payload),
-                Err(err) => debug!("nicko error {:?} {:?}", err, &message.payload),
-            };
             let received_receipt: P2PMessageReceipt = extern_io.decode()?;
             // create_entry(&message)?;
             // create_entry(&receipt)?;
@@ -133,7 +140,6 @@ pub fn send_message_call_remote_handler(
         }
         // Error that might happen when
         ZomeCallResponse::NetworkError(_e) => {
-            // return error(&e);
             return error("Sorry, something went wrong. [Network error]");
         }
         // This case shouldn't happen because of unrestricted access to receive message

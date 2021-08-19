@@ -5,14 +5,13 @@ use file_types::{FileMetadata, Payload, PayloadInput};
 
 use super::{
     MessageDataAndReceipt, MessageInput, P2PFileBytes, P2PMessage, P2PMessageData,
-    P2PMessageReceipt, P2PMessageReplyTo, ReceiveMessageInput, RemoteMessageSignal, Signal,
-    SignalDetails,
+    P2PMessageReceipt, P2PMessageReplyTo, ReceiveMessageInput, RemoteMessageSignal,
+    RemoteSignalStatus, Signal, SignalDetails,
 };
 
 pub fn send_message_remote_signal_handler(
     message_input: MessageInput,
 ) -> ExternResult<MessageDataAndReceipt> {
-    debug!("nicko send_message_signal is called");
     let now = sys_time()?;
 
     let message = P2PMessage {
@@ -50,11 +49,9 @@ pub fn send_message_remote_signal_handler(
         PayloadInput::File { file_bytes, .. } => Some(P2PFileBytes(file_bytes)),
     };
 
-    // TODO: remove sent/saved receipt
-    // TODO: this is delivered receipt
-    let sent_receipt = P2PMessageReceipt::from_message(message.clone())?;
+    let sent_receipt = P2PMessageReceipt::from_message(message.clone(), "Sent")?;
 
-    create_entry(&message)?;
+    create_entry(&message.clone())?;
     create_entry(&sent_receipt)?;
 
     let receive_input = ReceiveMessageInput(message.clone(), file.clone());
@@ -68,9 +65,20 @@ pub fn send_message_remote_signal_handler(
         payload: signal_payload,
     };
 
-    remote_signal(ExternIO::encode(signal)?, vec![message.receiver.clone()])?;
-
-    debug!("nicko send_message_signal remote_signal done");
+    match remote_signal(ExternIO::encode(signal)?, vec![message.receiver.clone()]) {
+        Ok(_) => {
+            let signal_status_payload = Signal::P2PRemoteSignalStatus(RemoteSignalStatus {
+                status: true,
+                message_hash: hash_entry(&message)?.to_string(),
+            });
+            let status_signal = SignalDetails {
+                name: "P2P_REMOTE_SIGNAL_STATUS".to_string(),
+                payload: signal_status_payload,
+            };
+            emit_signal(&status_signal)?;
+        }
+        _ => (),
+    }
 
     let queried_messages: Vec<Element> = query(
         QueryFilter::new()

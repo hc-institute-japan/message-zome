@@ -94,13 +94,26 @@ entry_def!(P2PMessagePin EntryDef {
 
 // ENTRY IMPLEMENTATIONS
 impl P2PMessageReceipt {
-    pub fn from_message(message: P2PMessage) -> ExternResult<Self> {
+    pub fn from_message(message: P2PMessage, status: &str) -> ExternResult<Self> {
         let now = sys_time()?;
+        let timestamp = Timestamp(now.as_secs() as i64, now.subsec_nanos());
+        let receipt_status = match status {
+            "Delivered" => Status::Delivered {
+                timestamp: timestamp,
+            },
+            "Sent" => Status::Sent {
+                timestamp: timestamp,
+            },
+            "Read" => Status::Read {
+                timestamp: timestamp,
+            },
+            _ => Status::Sent {
+                timestamp: timestamp,
+            },
+        };
         let receipt = P2PMessageReceipt {
             id: vec![hash_entry(&message)?],
-            status: Status::Delivered {
-                timestamp: Timestamp(now.as_secs() as i64, now.subsec_nanos()),
-            },
+            status: receipt_status,
         };
         Ok(receipt)
     }
@@ -112,6 +125,7 @@ pub struct MessageInput {
     receiver: AgentPubKey,
     payload: PayloadInput,
     reply_to: Option<EntryHash>,
+    timestamp: Option<Timestamp>,
 }
 
 // test_stub: test structure for accepting timestamp as input in send_message
@@ -144,7 +158,7 @@ pub struct ReceiveMessageInput(P2PMessage, Option<P2PFileBytes>);
 #[derive(Serialize, Deserialize, SerializedBytes, Clone, Debug)]
 #[serde(tag = "status", rename_all = "camelCase")]
 pub enum Status {
-    Sent,
+    Sent { timestamp: Timestamp },
     Delivered { timestamp: Timestamp },
     Read { timestamp: Timestamp },
 }
@@ -246,6 +260,7 @@ pub enum Signal {
     P2PPinSignal(PinSignal),
     P2PReceiveMessage(RemoteMessageSignal),
     P2PReceiveReceipt(RemoteReceiptSignal),
+    P2PRemoteSignalStatus(RemoteSignalStatus),
 }
 
 #[derive(Serialize, Deserialize, SerializedBytes, Clone, Debug)]
@@ -273,6 +288,11 @@ pub struct RemoteMessageSignal {
 #[derive(Serialize, Deserialize, SerializedBytes, Clone, Debug)]
 pub struct RemoteReceiptSignal {
     pub receipt: P2PMessageReceipt,
+}
+#[derive(Serialize, Deserialize, SerializedBytes, Clone, Debug)]
+pub struct RemoteSignalStatus {
+    status: bool,
+    message_hash: String,
 }
 #[derive(Serialize, Deserialize, SerializedBytes, Clone, Debug)]
 pub struct TypingSignal {

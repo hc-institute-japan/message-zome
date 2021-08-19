@@ -30,8 +30,6 @@ pub fn pin_message_handler(pin_message_input: PinMessageInput) -> ExternResult<P
         conversant = pin_message_input.conversants[1].clone()
     }
 
-    debug!("conversant {:?}", conversant);
-
     let zome_call_response: ZomeCallResponse = call_remote(
         conversant,
         zome_info()?.zome_name,

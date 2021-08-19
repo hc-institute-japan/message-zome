@@ -43,7 +43,7 @@ pub fn send_message_with_timestamp_handler(
         reply_to: message_input.reply_to,
     };
 
-    let receipt = P2PMessageReceipt::from_message(message.clone())?;
+    let receipt = P2PMessageReceipt::from_message(message.clone(), "Sent")?;
     create_entry(&message)?;
     create_entry(&receipt)?;
 

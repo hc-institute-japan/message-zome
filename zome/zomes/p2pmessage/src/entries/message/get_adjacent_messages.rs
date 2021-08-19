@@ -13,7 +13,6 @@ use super::{
 pub fn get_adjacent_messages_handler(
     filter: P2PMessageFilterBatch,
 ) -> ExternResult<P2PMessageHashTables> {
-    debug!("entered get_next_messages");
     let queried_messages: Vec<Element> = query(
         QueryFilter::new()
             .entry_type(EntryType::App(AppEntryType::new(
@@ -23,7 +22,6 @@ pub fn get_adjacent_messages_handler(
             )))
             .include_entries(true),
     )?;
-    debug!("query success");
 
     let mut agent_messages: HashMap<String, Vec<String>> = HashMap::new();
     // agent_messages.insert(format!("{:?}", filter.conversant.clone()), Vec::new());
@@ -34,8 +32,6 @@ pub fn get_adjacent_messages_handler(
     let mut later_message_hashes: Vec<EntryHash> = Vec::new();
     let mut later_messages: Vec<P2PMessage> = Vec::new();
 
-    debug!("filter {:?}", filter.clone());
-
     let filter_timestamp = match filter.last_fetched_timestamp {
         Some(timestamp) => timestamp,
         None => {
@@ -43,17 +39,10 @@ pub fn get_adjacent_messages_handler(
             Timestamp(now.as_secs() as i64, 0)
         }
     };
-    debug!("filter timestamp {:?}", filter_timestamp.0);
 
     for message in queried_messages.into_iter() {
         let message_entry: P2PMessage = try_from_element(message)?;
         let message_hash = hash_entry(&message_entry)?;
-
-        debug!("iterated timestamp {:?}", message_entry.time_sent.0.clone());
-        debug!(
-            "message > filter {:?}",
-            message_entry.time_sent.0.clone() >= filter_timestamp.0
-        );
 
         if (match filter.last_fetched_message_id {
             Some(ref id) if *id == message_hash => false,
@@ -64,7 +53,6 @@ pub fn get_adjacent_messages_handler(
                 || message_entry.receiver == filter.conversant)
         {
             if message_entry.time_sent.0 >= filter_timestamp.0 {
-                debug!("timestmap is greater");
                 match message_entry.payload {
                     Payload::Text { .. } => {
                         if filter.payload_type == "Text" || filter.payload_type == "All" {
@@ -244,18 +232,12 @@ pub fn get_adjacent_messages_handler(
         }
     }
 
-    debug!("iterated through messages");
     let mut start_index: usize = 0;
     if later_messages.len() > filter.batch_size.into() {
         start_index = later_messages.len() as usize - filter.batch_size as usize;
     }
-    debug!("start index is {:?}", start_index);
-    debug!("later messages {:?}", later_messages);
-    debug!("later message hashes {:?}", later_message_hashes);
 
-    debug!("sliced");
     for index in start_index..later_messages.len() {
-        debug!("{:?}", index);
         insert_message(
             &mut agent_messages,
             &mut message_contents,
@@ -264,13 +246,11 @@ pub fn get_adjacent_messages_handler(
             filter.conversant.clone(),
         )?;
     }
-    debug!("iterated through splice");
 
     get_receipts(&mut message_contents, &mut receipt_contents)?;
 
-    debug!("got receipts");
     get_replies(&mut reply_pairs, &mut message_contents)?;
-    debug!("got replies");
+
     Ok(P2PMessageHashTables(
         AgentMessages(agent_messages),
         MessageContents(message_contents),

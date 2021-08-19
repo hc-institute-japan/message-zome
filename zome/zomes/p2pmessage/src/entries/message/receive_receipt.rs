@@ -1,11 +1,31 @@
+use crate::utils::{error, try_from_element};
 use hdk::prelude::*;
 use std::collections::HashMap;
-
 // use super::helpers::commit_receipts;
 
 use super::{P2PMessageReceipt, ReceiptContents, ReceiptSignal, Signal, SignalDetails};
 
 pub fn receive_receipt_handler(receipt: P2PMessageReceipt) -> ExternResult<ReceiptContents> {
+    let queried_receipts: Vec<Element> = query(
+        QueryFilter::new()
+            .entry_type(EntryType::App(AppEntryType::new(
+                EntryDefIndex::from(1),
+                zome_info()?.zome_id,
+                EntryVisibility::Private,
+            )))
+            .include_entries(true),
+    )?;
+    let receipt_input_hash = hash_entry(&receipt)?;
+
+    for queried_receipt in queried_receipts.clone().into_iter() {
+        let receipt_entry: P2PMessageReceipt = try_from_element(queried_receipt)?;
+        let receipt_hash = hash_entry(&receipt_entry)?;
+
+        if receipt_hash == receipt_input_hash {
+            return error("Duplicate receipt");
+        }
+    }
+
     let receipt_hash = create_entry(&receipt)?;
 
     let mut receipt_contents: HashMap<String, P2PMessageReceipt> = HashMap::new();
@@ -14,9 +34,8 @@ pub fn receive_receipt_handler(receipt: P2PMessageReceipt) -> ExternResult<Recei
     let signal = Signal::P2PMessageReceipt(ReceiptSignal {
         receipt: ReceiptContents(receipt_contents.clone()),
     });
-
     let signal_details = SignalDetails {
-        name: "RECEIVE_DELIVERED_RECEIPT".to_string(),
+        name: "RECEIVE_P2P_RECEIPT".to_string(),
         payload: signal,
     };
 

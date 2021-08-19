@@ -24,10 +24,10 @@ pub fn read_message_call_remote_handler(
 
     match zome_call_response {
         ZomeCallResponse::Ok(extern_io) => {
-            match extern_io.clone().decode::<P2PMessageReceipt>() {
-                Ok(res) => debug!("nicko ok {:?}", res),
-                Err(err) => debug!("nicko error {:?}", err),
-            };
+            // match extern_io.clone().decode::<P2PMessageReceipt>() {
+            //     Ok(res) => debug!("nicko ok {:?}", res),
+            //     Err(err) => debug!("nicko error {:?}", err),
+            // };
 
             return Ok(extern_io.decode()?);
         }

@@ -51,35 +51,48 @@ fn init(_: ()) -> ExternResult<InitCallbackResult> {
 
 #[hdk_extern]
 fn recv_remote_signal(signal: ExternIO) -> ExternResult<()> {
-    debug!("nicko receive remote signal is called");
     let signal_detail: SignalDetails = signal.decode()?;
-    debug!("nicko decoded signal {:?}", signal_detail.clone());
 
-    if signal_detail.name == "P2P_REMOTE_MESSAGE" {
-        debug!("nicko receive remote message signal");
-        if let Signal::P2PReceiveMessage(RemoteMessageSignal { input }) = signal_detail.payload {
-            receive_message_handler(input)?;
+    let signal_name: &str = &signal_detail.name;
+
+    match signal_name {
+        "P2P_REMOTE_MESSAGE" => {
+            debug!(
+                "nicko decoded signal P2P_REMOTE_MESSAGE {:?}",
+                signal_detail.clone()
+            );
+            if let Signal::P2PReceiveMessage(RemoteMessageSignal { input }) = signal_detail.payload
+            {
+                receive_message_handler(input)?;
+            }
         }
-        Ok(())
-    } else if signal_detail.name == "P2P_REMOTE_DELIVERED_RECEIPT" {
-        debug!("nicko receive remote delivered receipt signal");
-        if let Signal::P2PReceiveReceipt(RemoteReceiptSignal { receipt }) = signal_detail.payload {
-            receive_read_receipt_handler(receipt)?;
+        "P2P_REMOTE_DELIVERED_RECEIPT" => {
+            debug!(
+                "nicko decoded signal P2P_REMOTE DELIVERED_RECEIPT {:?}",
+                signal_detail.clone()
+            );
+            if let Signal::P2PReceiveReceipt(RemoteReceiptSignal { receipt }) =
+                signal_detail.payload
+            {
+                receive_receipt_handler(receipt)?;
+            }
         }
-        Ok(())
-    } else if signal_detail.name == "P2P_REMOTE_READ_RECEIPT" {
-        debug!("nicko receive remote read receipt signal");
-        if let Signal::P2PReceiveReceipt(RemoteReceiptSignal { receipt }) = signal_detail.payload {
-            receive_receipt_handler(receipt)?;
+        "P2P_REMOTE_READ_RECEIPT" => {
+            debug!(
+                "nicko decoded signal P2P_REMOTE_READ_RECEIPT {:?}",
+                signal_detail.clone()
+            );
+            if let Signal::P2PReceiveReceipt(RemoteReceiptSignal { receipt }) =
+                signal_detail.payload
+            {
+                receive_receipt_handler(receipt)?;
+            }
         }
-        Ok(())
-    } else if signal_detail.name == "TYPING_P2P" {
-        emit_signal(&signal_detail)?;
-        Ok(())
-    } else {
-        debug!("nicko fallthrough signal case");
-        Ok(())
-    }
+        "TYPING_P2P" => emit_signal(&signal_detail)?,
+        _ => debug!("unknown signal"),
+    };
+
+    Ok(())
 }
 
 // call_remote set
@@ -101,13 +114,11 @@ fn send_message_with_timestamp(
 
 // remote_signal set
 #[hdk_extern]
-fn send_message_remote_signal(message_input: MessageInput) -> ExternResult<MessageDataAndReceipt> {
+fn send_message(message_input: MessageInput) -> ExternResult<MessageDataAndReceipt> {
     return send_message_remote_signal_handler(message_input);
 }
 #[hdk_extern]
-fn read_message_remote_signal(
-    read_message_input: ReadMessageInput,
-) -> ExternResult<ReceiptContents> {
+fn read_message(read_message_input: ReadMessageInput) -> ExternResult<ReceiptContents> {
     return read_message_remote_signal_handler(read_message_input);
 }
 // end of remote_signal set
