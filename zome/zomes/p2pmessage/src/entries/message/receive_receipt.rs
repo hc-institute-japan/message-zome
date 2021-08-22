@@ -3,9 +3,29 @@ use hdk::prelude::*;
 use std::collections::HashMap;
 // use super::helpers::commit_receipts;
 
-use super::{P2PMessageReceipt, ReceiptContents, ReceiptSignal, Signal, SignalDetails};
+use super::{P2PMessage, P2PMessageReceipt, ReceiptContents, ReceiptSignal, Signal, SignalDetails};
 
 pub fn receive_receipt_handler(receipt: P2PMessageReceipt) -> ExternResult<ReceiptContents> {
+    let receipt_message_hash = receipt.id[0].clone();
+    let queried_messages: Vec<Element> = query(
+        QueryFilter::new()
+            .entry_type(EntryType::App(AppEntryType::new(
+                EntryDefIndex::from(0),
+                zome_info()?.zome_id,
+                EntryVisibility::Private,
+            )))
+            .include_entries(true),
+    )?;
+
+    for queried_message in queried_messages.clone().into_iter() {
+        let message_entry: P2PMessage = try_from_element(queried_message)?;
+        let message_hash = hash_entry(&message_entry)?;
+
+        if message_hash == receipt_message_hash {
+            return error("Duplicate message");
+        }
+    }
+
     let queried_receipts: Vec<Element> = query(
         QueryFilter::new()
             .entry_type(EntryType::App(AppEntryType::new(

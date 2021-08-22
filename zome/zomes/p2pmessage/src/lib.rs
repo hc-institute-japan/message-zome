@@ -57,35 +57,61 @@ fn recv_remote_signal(signal: ExternIO) -> ExternResult<()> {
 
     match signal_name {
         "P2P_REMOTE_MESSAGE" => {
-            debug!(
-                "nicko decoded signal P2P_REMOTE_MESSAGE {:?}",
-                signal_detail.clone()
-            );
             if let Signal::P2PReceiveMessage(RemoteMessageSignal { input }) = signal_detail.payload
             {
-                receive_message_handler(input)?;
+                match receive_message_handler(input.clone()) {
+                    Ok(_) => (),
+                    _ => {
+                        debug!("nicko p2p receive message failed");
+                        let signal = Signal::P2PRetryMessage(RetryMessageSignal { input: input });
+                        let signal_details = SignalDetails {
+                            name: "P2P_RETRY_RECEIVE_MESSAGE".to_string(),
+                            payload: signal,
+                        };
+                        emit_signal(&signal_details)?;
+                        ()
+                    }
+                };
             }
         }
         "P2P_REMOTE_DELIVERED_RECEIPT" => {
-            debug!(
-                "nicko decoded signal P2P_REMOTE DELIVERED_RECEIPT {:?}",
-                signal_detail.clone()
-            );
             if let Signal::P2PReceiveReceipt(RemoteReceiptSignal { receipt }) =
                 signal_detail.payload
             {
-                receive_receipt_handler(receipt)?;
+                match receive_receipt_handler(receipt.clone()) {
+                    Ok(_) => (),
+                    _ => {
+                        debug!("nicko p2p receive receipt failed");
+                        let signal =
+                            Signal::P2PRetryReceipt(RetryReceiptSignal { receipt: receipt });
+                        let signal_details = SignalDetails {
+                            name: "P2P_RETRY_DELIVERED_RECEIPT".to_string(),
+                            payload: signal,
+                        };
+                        emit_signal(&signal_details)?;
+                        ()
+                    }
+                };
             }
         }
         "P2P_REMOTE_READ_RECEIPT" => {
-            debug!(
-                "nicko decoded signal P2P_REMOTE_READ_RECEIPT {:?}",
-                signal_detail.clone()
-            );
             if let Signal::P2PReceiveReceipt(RemoteReceiptSignal { receipt }) =
                 signal_detail.payload
             {
-                receive_receipt_handler(receipt)?;
+                match receive_receipt_handler(receipt.clone()) {
+                    Ok(_) => (),
+                    _ => {
+                        debug!("nicko p2p receive receipt failed");
+                        let signal =
+                            Signal::P2PRetryReceipt(RetryReceiptSignal { receipt: receipt });
+                        let signal_details = SignalDetails {
+                            name: "P2P_RETRY_READ_RECEIPT".to_string(),
+                            payload: signal,
+                        };
+                        emit_signal(&signal_details)?;
+                        ()
+                    }
+                };
             }
         }
         "TYPING_P2P" => emit_signal(&signal_detail)?,

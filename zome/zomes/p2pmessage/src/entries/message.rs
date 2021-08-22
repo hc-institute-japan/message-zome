@@ -261,6 +261,8 @@ pub enum Signal {
     P2PReceiveMessage(RemoteMessageSignal),
     P2PReceiveReceipt(RemoteReceiptSignal),
     P2PRemoteSignalStatus(RemoteSignalStatus),
+    P2PRetryMessage(RetryMessageSignal),
+    P2PRetryReceipt(RetryReceiptSignal),
 }
 
 #[derive(Serialize, Deserialize, SerializedBytes, Clone, Debug)]
@@ -282,6 +284,13 @@ pub struct PinSignal {
     pin: PinContents,
 }
 #[derive(Serialize, Deserialize, SerializedBytes, Clone, Debug)]
+pub struct TypingSignal {
+    agent: AgentPubKey,
+    is_typing: bool,
+}
+
+// Remote signal structures
+#[derive(Serialize, Deserialize, SerializedBytes, Clone, Debug)]
 pub struct RemoteMessageSignal {
     pub input: ReceiveMessageInput,
 }
@@ -294,10 +303,16 @@ pub struct RemoteSignalStatus {
     status: bool,
     message_hash: String,
 }
+
+// Error / Rerty signals
 #[derive(Serialize, Deserialize, SerializedBytes, Clone, Debug)]
-pub struct TypingSignal {
-    agent: AgentPubKey,
-    is_typing: bool,
+pub struct RetryMessageSignal {
+    pub input: ReceiveMessageInput,
+    // timestamp: Timestamp, // where to get???
+}
+#[derive(Serialize, Deserialize, SerializedBytes, Clone, Debug)]
+pub struct RetryReceiptSignal {
+    pub receipt: P2PMessageReceipt,
 }
 
 #[derive(Serialize, Deserialize, SerializedBytes, Clone, Debug)]
