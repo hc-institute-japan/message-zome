@@ -1,12 +1,12 @@
 use super::{
-    MessageDataAndReceipt, MessageSignal, P2PMessage, P2PMessageData, P2PMessageReceipt,
-    P2PMessageReplyTo, ReceiveMessageInput, RemoteReceiptSignal, Signal, SignalDetails,
+    MessageDataAndReceipt, P2PMessage, P2PMessageData, P2PMessageReceipt, P2PMessageReplyTo,
+    ReceiveMessageInput, RemoteReceiptSignal, Signal, SignalDetails,
 };
 use crate::utils::error;
 use crate::utils::try_from_element;
 use hdk::prelude::*;
 
-pub fn receive_message_handler(input: ReceiveMessageInput) -> ExternResult<P2PMessageReceipt> {
+pub fn receive_message_handler(input: ReceiveMessageInput) -> ExternResult<MessageDataAndReceipt> {
     let queried_messages: Vec<Element> = query(
         QueryFilter::new()
             .entry_type(EntryType::App(AppEntryType::new(
@@ -82,6 +82,7 @@ pub fn receive_message_handler(input: ReceiveMessageInput) -> ExternResult<P2PMe
 
     let signal_payload = Signal::P2PReceiveReceipt(RemoteReceiptSignal {
         receipt: receipt.clone(),
+        message: input.0.clone(),
     });
 
     let signal = SignalDetails {
@@ -91,19 +92,8 @@ pub fn receive_message_handler(input: ReceiveMessageInput) -> ExternResult<P2PMe
 
     remote_signal(ExternIO::encode(signal)?, vec![input.0.author.clone()])?;
 
-    // emit signal to UI or return?
-    let signal = Signal::Message(MessageSignal {
-        message: MessageDataAndReceipt(
-            (hash_entry(&input.0.clone())?, message_return),
-            (hash_entry(&receipt.clone())?, receipt.clone()),
-        ),
-    });
-
-    let signal_details = SignalDetails {
-        name: "RECEIVE_P2P_MESSAGE".to_string(),
-        payload: signal,
-    };
-    emit_signal(&signal_details)?;
-
-    Ok(receipt)
+    Ok(MessageDataAndReceipt(
+        (hash_entry(&input.0)?, message_return),
+        (hash_entry(&receipt)?, receipt),
+    ))
 }

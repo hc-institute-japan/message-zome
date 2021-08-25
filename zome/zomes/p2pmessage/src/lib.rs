@@ -60,7 +60,21 @@ fn recv_remote_signal(signal: ExternIO) -> ExternResult<()> {
             if let Signal::P2PReceiveMessage(RemoteMessageSignal { input }) = signal_detail.payload
             {
                 match receive_message_handler(input.clone()) {
-                    Ok(_) => (),
+                    Ok(MessageDataAndReceipt(message, receipt)) => {
+                        debug!("receive message succeeds");
+                        let signal = Signal::Message(MessageSignal {
+                            message: MessageDataAndReceipt(
+                                (message.0, message.1),
+                                (receipt.0, receipt.1),
+                            ),
+                        });
+
+                        let signal_details = SignalDetails {
+                            name: "RECEIVE_P2P_MESSAGE".to_string(),
+                            payload: signal,
+                        };
+                        emit_signal(&signal_details)?;
+                    }
                     _ => {
                         debug!("nicko p2p receive message failed");
                         let signal = Signal::P2PRetryMessage(RetryMessageSignal { input: input });
@@ -75,10 +89,13 @@ fn recv_remote_signal(signal: ExternIO) -> ExternResult<()> {
             }
         }
         "P2P_REMOTE_DELIVERED_RECEIPT" => {
-            if let Signal::P2PReceiveReceipt(RemoteReceiptSignal { receipt }) =
+            if let Signal::P2PReceiveReceipt(RemoteReceiptSignal { receipt, message }) =
                 signal_detail.payload
             {
-                match receive_receipt_handler(receipt.clone()) {
+                match receive_receipt_handler(MessageAndReceiptTuple {
+                    message: message.clone(),
+                    receipt: receipt.clone(),
+                }) {
                     Ok(_) => (),
                     _ => {
                         debug!("nicko p2p receive receipt failed");
@@ -95,10 +112,10 @@ fn recv_remote_signal(signal: ExternIO) -> ExternResult<()> {
             }
         }
         "P2P_REMOTE_READ_RECEIPT" => {
-            if let Signal::P2PReceiveReceipt(RemoteReceiptSignal { receipt }) =
+            if let Signal::P2PReceiveReadReceipt(RemoteReadReceiptSignal { receipt }) =
                 signal_detail.payload
             {
-                match receive_receipt_handler(receipt.clone()) {
+                match receive_read_receipt_handler(receipt.clone()) {
                     Ok(_) => (),
                     _ => {
                         debug!("nicko p2p receive receipt failed");
@@ -141,8 +158,24 @@ fn send_message_with_timestamp(
 // remote_signal set
 #[hdk_extern]
 fn send_message(message_input: MessageInput) -> ExternResult<MessageDataAndReceipt> {
-    return send_message_remote_signal_handler(message_input);
+    let timestamp_string: String = match message_input.timestamp {
+        Some(timestamp) => format!("[{:?}, {:?}]", timestamp.0, timestamp.1).to_string(),
+        None => "".to_string(),
+    };
+
+    match send_message_remote_signal_handler(message_input) {
+        Ok(MessageDataAndReceipt(message_tuple, receipt_tuple)) => {
+            debug!("send message succeeded {:?}", message_tuple.1.clone());
+            return Ok(MessageDataAndReceipt(message_tuple, receipt_tuple));
+        }
+        _ => {
+            debug!("sending timestamp back");
+            return err("TODO: 000", &timestamp_string);
+        }
+    }
+    // validation runs after this extern call
 }
+
 #[hdk_extern]
 fn read_message(read_message_input: ReadMessageInput) -> ExternResult<ReceiptContents> {
     return read_message_remote_signal_handler(read_message_input);
@@ -165,7 +198,7 @@ fn sync_pins(pin: P2PMessagePin) -> ExternResult<PinContents> {
 }
 
 #[hdk_extern]
-fn receive_message(input: ReceiveMessageInput) -> ExternResult<P2PMessageReceipt> {
+fn receive_message(input: ReceiveMessageInput) -> ExternResult<MessageDataAndReceipt> {
     return receive_message_handler(input);
 }
 

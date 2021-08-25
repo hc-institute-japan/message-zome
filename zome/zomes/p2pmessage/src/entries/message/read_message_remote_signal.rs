@@ -2,7 +2,7 @@ use hdk::prelude::*;
 use std::collections::HashMap;
 
 use super::{
-    P2PMessageReceipt, ReadMessageInput, ReceiptContents, RemoteReceiptSignal, Signal,
+    P2PMessageReceipt, ReadMessageInput, ReceiptContents, RemoteReadReceiptSignal, Signal,
     SignalDetails, Status,
 };
 
@@ -21,7 +21,8 @@ pub fn read_message_remote_signal_handler(
     let mut receipt_contents: HashMap<String, P2PMessageReceipt> = HashMap::new();
     receipt_contents.insert(receipt_hash.to_string(), receipt.clone());
 
-    let signal_payload = Signal::P2PReceiveReceipt(RemoteReceiptSignal { receipt: receipt });
+    let signal_payload =
+        Signal::P2PReceiveReadReceipt(RemoteReadReceiptSignal { receipt: receipt });
 
     let signal = SignalDetails {
         name: "P2P_REMOTE_READ_RECEIPT".to_string(),

@@ -12,7 +12,13 @@ use super::{
 pub fn send_message_remote_signal_handler(
     message_input: MessageInput,
 ) -> ExternResult<MessageDataAndReceipt> {
-    let now = sys_time()?;
+    let message_timestamp = match message_input.timestamp {
+        None => {
+            let now = sys_time()?;
+            Timestamp(now.as_secs() as i64, now.subsec_nanos())
+        }
+        Some(timestamp) => timestamp,
+    };
 
     let message = P2PMessage {
         author: agent_info()?.agent_latest_pubkey,
@@ -40,7 +46,7 @@ pub fn send_message_remote_signal_handler(
                 }
             }
         },
-        time_sent: Timestamp(now.as_secs() as i64, now.subsec_nanos()),
+        time_sent: message_timestamp,
         reply_to: message_input.reply_to,
     };
 

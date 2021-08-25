@@ -125,7 +125,7 @@ pub struct MessageInput {
     receiver: AgentPubKey,
     payload: PayloadInput,
     reply_to: Option<EntryHash>,
-    timestamp: Option<Timestamp>,
+    pub timestamp: Option<Timestamp>,
 }
 
 // test_stub: test structure for accepting timestamp as input in send_message
@@ -205,10 +205,33 @@ pub struct ReceiptHash(EntryHash);
 pub struct MessageBundle(P2PMessageData, Vec<String>);
 
 #[derive(From, Into, Serialize, Deserialize, Clone, SerializedBytes, Debug)]
-pub struct MessageAndReceipt((EntryHash, P2PMessage), (EntryHash, P2PMessageReceipt));
+pub struct MessageAndReceipt(
+    pub (EntryHash, P2PMessage),
+    pub (EntryHash, P2PMessageReceipt),
+);
 
 #[derive(From, Into, Serialize, Deserialize, Clone, SerializedBytes, Debug)]
-pub struct MessageDataAndReceipt((EntryHash, P2PMessageData), (EntryHash, P2PMessageReceipt));
+pub struct MessageAndReceiptTuple {
+    pub message: P2PMessage,
+    pub receipt: P2PMessageReceipt,
+}
+
+impl MessageAndReceipt {
+    pub fn new(
+        message_hash: EntryHash,
+        message: P2PMessage,
+        receipt_hash: EntryHash,
+        receipt: P2PMessageReceipt,
+    ) -> MessageAndReceipt {
+        MessageAndReceipt((message_hash, message), (receipt_hash, receipt))
+    }
+}
+
+#[derive(From, Into, Serialize, Deserialize, Clone, SerializedBytes, Debug)]
+pub struct MessageDataAndReceipt(
+    pub (EntryHash, P2PMessageData),
+    pub (EntryHash, P2PMessageReceipt),
+);
 
 // OUTPUT STRUCTURES
 #[derive(From, Into, Serialize, Deserialize, Clone, SerializedBytes, Debug)]
@@ -260,6 +283,7 @@ pub enum Signal {
     P2PPinSignal(PinSignal),
     P2PReceiveMessage(RemoteMessageSignal),
     P2PReceiveReceipt(RemoteReceiptSignal),
+    P2PReceiveReadReceipt(RemoteReadReceiptSignal),
     P2PRemoteSignalStatus(RemoteSignalStatus),
     P2PRetryMessage(RetryMessageSignal),
     P2PRetryReceipt(RetryReceiptSignal),
@@ -273,7 +297,7 @@ pub struct SignalDetails {
 
 #[derive(Serialize, Deserialize, SerializedBytes, Clone, Debug)]
 pub struct MessageSignal {
-    message: MessageDataAndReceipt,
+    pub message: MessageDataAndReceipt,
 }
 #[derive(Serialize, Deserialize, SerializedBytes, Clone, Debug)]
 pub struct ReceiptSignal {
@@ -296,6 +320,11 @@ pub struct RemoteMessageSignal {
 }
 #[derive(Serialize, Deserialize, SerializedBytes, Clone, Debug)]
 pub struct RemoteReceiptSignal {
+    pub receipt: P2PMessageReceipt,
+    pub message: P2PMessage,
+}
+#[derive(Serialize, Deserialize, SerializedBytes, Clone, Debug)]
+pub struct RemoteReadReceiptSignal {
     pub receipt: P2PMessageReceipt,
 }
 #[derive(Serialize, Deserialize, SerializedBytes, Clone, Debug)]
